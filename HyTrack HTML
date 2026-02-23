@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyTrack Complete Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800;900&family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; margin: 0;
+        }
+        .phone-frame {
+            width: 375px; height: 812px; 
+            background: #ffffff; 
+            border-radius: 48px; position: relative; overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(30, 58, 138, 0.25), 0 0 0 12px #0f172a;
+        }
+        .font-script { font-family: 'Pacifico', cursive; }
+        .hide-screen { display: none !important; }
+        
+        /* Smooth fade-in animation */
+        .screen { 
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0; 
+            overflow-y: auto; background: #ffffff; padding-bottom: 90px;
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Hide scrollbar for cleaner look */
+        .screen::-webkit-scrollbar { display: none; }
+        .screen { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Active Faucet Pulse Animation */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 25px rgba(59, 130, 246, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .faucet-on-anim {
+            animation: pulse-ring 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(145deg, #eff6ff, #dbeafe) !important;
+            border-color: #60a5fa !important;
+        }
+        .text-glow {
+            text-shadow: 0 4px 20px rgba(59,130,246,0.6);
+        }
+        
+        /* Animated Water Wave */
+        @keyframes wave-flow {
+            0% { background-position-x: 0; }
+            100% { background-position-x: 1440px; }
+        }
+        .water-wave {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 140px;
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg"><path fill="%233b82f6" fill-opacity="0.15" d="M0,160L48,170.7C96,181,192,203,288,197.3C384,192,480,160,576,165.3C672,171,768,213,864,213.3C960,213,1056,171,1152,149.3C1248,128,1344,128,1392,128L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path><path fill="%233b82f6" fill-opacity="0.4" d="M0,256L48,245.3C96,235,192,213,288,213.3C384,213,480,235,576,224C672,213,768,171,864,170.7C960,171,1056,213,1152,224C1248,235,1344,213,1392,202.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x bottom;
+            background-size: 1440px 140px; pointer-events: none;
+            animation: wave-flow 12s linear infinite;
+        }
+
+        /* Hide Number Input Spinners */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
+        }
+
+        /* Custom Input Styling */
+        .glass-input {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            background: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        
+        .fade-transition { transition: opacity 0.3s ease; }
+
+        /* Notification Badge */
+        .notif-badge {
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 900;
+            background: #ef4444;
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.95);
+            box-shadow: 0 10px 20px rgba(239,68,68,0.25);
+        }
+        .hide-badge { display: none !important; }
+    </style>
+</head>
+<body onload="initApp()">
+
+<div class="phone-frame">
+
+    <div id="view-login" class="screen flex flex-col items-center justify-center p-8 z-20 bg-slate-50">
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-900 rounded-[2rem] w-28 h-28 flex items-center justify-center mb-6 shadow-2xl shadow-blue-500/30 transform hover:scale-105 transition duration-300">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 12V2h12v4M21 6H12v2M12 12a5 5 0 0 0 10 0M12 16v3M8 20a1 1 0 0 1 8 0" /></svg>
+        </div>
+        <h1 class="text-4xl font-script text-slate-800 mb-2">HyTrack</h1>
+        <p class="text-xs font-semibold text-slate-500 tracking-widest uppercase mb-10">Smart Water Monitor</p>
+        
+        <div class="w-full space-y-4 relative z-10">
+            <div id="error-toast" class="hide-screen absolute inset-x-0 -top-16 bg-white border-l-4 border-red-500 rounded-xl p-3 shadow-xl z-50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="bg-red-100 text-red-500 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">!</div>
+                    <p class="text-slate-700 font-bold text-[10px] uppercase">WRONG PASSWORD!</p>
+                </div>
+                <button onclick="hideError()" class="text-slate-400 hover:text-red-500">✕</button>
+            </div>
+
+            <input type="text" placeholder="Username" class="w-full py-4 px-6 rounded-2xl glass-input text-slate-800 placeholder-slate-400 outline-none font-medium text-sm">
+            <input type="password" id="pass-input" placeholder="Password" class="w-full py-4 px-6 rounded-2xl glass-input text-slate-800 placeholder-slate-400 outline-none font-medium text-sm">
+            
+            <div class="flex justify-end w-full">
+                <p onclick="switchView('view-create')" class="text-blue-600 text-[11px] font-bold cursor-pointer hover:text-blue-800 transition mb-2">Create Account</p>
+            </div>
+
+            <button onclick="attemptLogin()" class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black rounded-2xl shadow-lg shadow-blue-500/30 text-sm tracking-widest uppercase hover:opacity-90 active:scale-[0.98] transition-all">Log In</button>
+        </div>
+        <div class="water-wave opacity-60"></div>
+    </div>
+
+    <div id="view-create" class="screen hide-screen flex flex-col justify-center p-8 bg-slate-50 z-10">
+        <button onclick="switchView('view-login')" class="absolute top-10 left-6 text-slate-400 font-bold text-xs flex items-center gap-1 hover:text-slate-800 transition"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button>
+        
+        <h2 class="font-black text-2xl mb-2 text-slate-800">Sign Up</h2>
+        <p class="text-xs font-medium text-slate-500 mb-8">Join HyTrack to monitor your usage.</p>
+        
+        <div class="w-full space-y-5 relative z-10">
+            <div>
+                <label class="text-[11px] font-bold text-slate-500 ml-1 mb-1.5 block uppercase tracking-wider">Email or Phone</label>
+                <input type="text" class="w-full py-3.5 px-5 rounded-xl glass-input text-sm text-slate-800">
+            </div>
+            <div>
+                <label class="text-[11px] font-bold text-slate-500 ml-1 mb-1.5 block uppercase tracking-wider">Create Password</label>
+                <input type="password" class="w-full py-3.5 px-5 rounded-xl glass-input text-sm text-slate-800">
+            </div>
+            <div>
+                <label class="text-[11px] font-bold text-slate-500 ml-1 mb-1.5 block uppercase tracking-wider">Confirm Password</label>
+                <input type="password" class="w-full py-3.5 px-5 rounded-xl glass-input text-sm text-slate-800">
+            </div>
+            <button onclick="switchView('view-login')" class="w-full py-4 bg-slate-800 text-white font-black rounded-xl tracking-widest mt-4 shadow-lg active:scale-[0.98] text-xs uppercase hover:bg-slate-900 transition-all">Create Account</button>
+        </div>
+        <div class="water-wave opacity-50"></div>
+    </div>
+
+    <div id="view-dash" class="screen hide-screen bg-slate-50 p-6 pt-14">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Welcome back</p>
+                <h2 class="text-xl font-black text-slate-800">User Dashboard</h2>
+            </div>
+            <div class="bg-gradient-to-br from-blue-500 to-blue-700 w-10 h-10 rounded-full flex items-center justify-center shadow-md text-white font-bold cursor-pointer" onclick="switchView('view-profile')">U</div>
+        </header>
+
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-7 rounded-[2rem] shadow-xl shadow-blue-500/20 text-white mb-4 relative overflow-hidden cursor-pointer transform hover:-translate-y-1 transition duration-300" onclick="switchView('view-billing')">
+            <div class="absolute right-0 top-0 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
+            
+            <div class="flex justify-between items-start mb-2 relative z-10">
+                <p class="text-[11px] font-bold uppercase tracking-widest opacity-80">Current Bill Limit</p>
+                <span class="bg-white/20 px-2 py-1 rounded text-[9px] font-bold uppercase backdrop-blur-sm">Synced</span>
+            </div>
+            <h3 id="dash-bill-display" class="text-4xl font-black mb-6 relative z-10 tracking-tight truncate">₱ 0.00</h3>
+            
+            <div class="flex justify-between items-end border-t border-white/20 pt-4 relative z-10">
+                <div>
+                    <p class="text-[10px] font-bold uppercase opacity-80 mb-0.5">Total Consumption</p>
+                    <p class="text-xl font-bold truncate max-w-[120px]"><span id="dash-consumption-display">0.00</span> <span class="text-xs font-medium opacity-80">m³</span></p>
+                </div>
+                <div class="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick glance (new) -->
+        <div class="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 mb-6 relative z-10 cursor-pointer hover:shadow-md hover:border-blue-200 transition" onclick="switchView('view-notifications')">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex items-start gap-4">
+                    <div class="bg-blue-50 w-10 h-10 rounded-full flex items-center justify-center shrink-0">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                            <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Notifications</p>
+                        <p id="dash-notif-summary" class="text-[11px] font-medium text-slate-600 leading-relaxed">No alerts right now.</p>
+                    </div>
+                </div>
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">View</div>
+            </div>
+        </div>
+
+        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Quick Controls</p>
+        <div class="grid grid-cols-2 gap-4 mb-6 z-10 relative">
+            <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 cursor-pointer hover:shadow-md hover:border-blue-200 transform hover:-translate-y-1 transition-all duration-300 group" onclick="switchView('view-faucet')">
+                <div class="bg-blue-50 w-12 h-12 rounded-full flex items-center justify-center mb-3 group-hover:bg-blue-500 transition-colors duration-300">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600 group-hover:text-white transition-colors duration-300"><path d="M7 12V2h12v4M21 6H12v2M12 12a5 5 0 0 0 10 0M12 16v3M8 20a1 1 0 0 1 8 0" /></svg>
+                </div>
+                <h4 class="text-[11px] font-black text-slate-800 uppercase tracking-wide">Faucet</h4>
+                <p class="text-[9px] text-slate-400 font-semibold mt-1">Remote Control</p>
+            </div>
+            
+            <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 cursor-pointer hover:shadow-md hover:border-blue-200 transform hover:-translate-y-1 transition-all duration-300 group" onclick="switchView('view-set-limit')">
+                <div class="bg-indigo-50 w-12 h-12 rounded-full flex items-center justify-center mb-3 group-hover:bg-indigo-500 transition-colors duration-300">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600 group-hover:text-white transition-colors duration-300"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                </div>
+                <h4 class="text-[11px] font-black text-slate-800 uppercase tracking-wide">Limits</h4>
+                <p class="text-[9px] text-slate-400 font-semibold mt-1">Set Water Target</p>
+            </div>
+        </div>
+        <div class="water-wave z-0 opacity-40"></div>
+    </div>
+
+    <div id="view-faucet" class="screen hide-screen bg-slate-50 flex flex-col items-center justify-center p-8 text-center transition-colors duration-500">
+        <button onclick="switchView('view-dash')" class="absolute top-12 left-6 text-slate-400 font-bold text-xs flex items-center gap-1 hover:text-slate-800 transition z-20"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button>
+        
+        <h4 class="absolute top-12 text-[12px] font-black text-slate-800 uppercase tracking-widest z-10">Smart Faucet</h4>
+        
+        <div id="faucet-circle" class="bg-white p-10 rounded-full shadow-2xl shadow-slate-200/50 w-64 h-64 flex flex-col items-center justify-center relative border-[10px] border-slate-50 mb-10 z-10 transition-all duration-500">
+            <svg id="faucet-icon" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="transition-colors duration-500"><path d="M7 12V2h12v4M21 6H12v2M12 12a5 5 0 0 0 10 0M12 16v3M8 20a1 1 0 0 1 8 0" /></svg>
+        </div>
+
+        <div id="faucet-status-text" class="text-[11px] font-black text-slate-400 uppercase mb-5 tracking-[0.3em] z-10 transition-colors duration-300">SYSTEM: OFF</div>
+        
+        <label class="relative inline-flex items-center cursor-pointer scale-[1.7] z-10 shadow-sm rounded-full">
+            <input type="checkbox" id="faucet-toggle" onchange="toggleFaucet(this)" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-gradient-to-r peer-checked:from-blue-500 peer-checked:to-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full shadow-inner after:shadow-sm"></div>
+        </label>
+        
+        <span id="on-off-label" class="mt-10 text-3xl font-black text-slate-800 uppercase z-10 transition-all duration-300 tracking-tight">OFF</span>
+        
+        <div class="mt-6 bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 z-10 flex items-center gap-3 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-300" onclick="switchView('view-set-limit')">
+            <div class="bg-blue-50 p-1.5 rounded-full">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wide">Target: <span id="faucet-limit-display" class="text-blue-600 font-black">0.00</span> m³</span>
+        </div>
+
+        <!-- Quick reminder shortcut (new) -->
+        <div class="mt-3 bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 z-10 flex items-center gap-3 cursor-pointer hover:border-indigo-300 hover:shadow-md transition-all duration-300" onclick="switchView('view-notifications')">
+            <div class="bg-indigo-50 p-1.5 rounded-full">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2">
+                    <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                </svg>
+            </div>
+            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wide">Open Alerts</span>
+        </div>
+
+        <div id="faucet-wave" class="water-wave z-0 grayscale opacity-20 transition-all duration-1000 h-[200px] background-size-[1440px_200px]"></div>
+    </div>
+
+    <div id="view-billing" class="screen hide-screen bg-slate-50 p-6 pt-14">
+        <button onclick="switchView('view-dash')" class="absolute top-12 left-6 text-slate-400 font-bold text-xs flex items-center gap-1 hover:text-slate-800 transition"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button>
+        <h2 class="text-[12px] font-black text-slate-800 mb-8 text-center uppercase tracking-widest mt-1">Billing History</h2>
+        
+        <div class="space-y-4 relative z-10">
+            <div class="bg-white p-5 rounded-[1.5rem] flex justify-between items-center shadow-sm border border-slate-100 hover:shadow-md transition">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-50 text-blue-600 font-black text-xs px-3 py-2 rounded-xl">NOV</div>
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">2025</p>
+                        <p class="text-[10px] text-slate-400 font-semibold uppercase">Paid via GCash</p>
+                    </div>
+                </div>
+                <span class="text-lg font-black text-blue-600">₱456.00</span>
+            </div>
+
+            <div class="bg-white p-5 rounded-[1.5rem] flex justify-between items-center shadow-sm border border-slate-100 hover:shadow-md transition">
+                <div class="flex items-center gap-4">
+                    <div class="bg-slate-50 text-slate-600 font-black text-xs px-3 py-2 rounded-xl">OCT</div>
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">2025</p>
+                        <p class="text-[10px] text-slate-400 font-semibold uppercase">Paid via Cash</p>
+                    </div>
+                </div>
+                <span class="text-lg font-black text-slate-700">₱243.00</span>
+            </div>
+
+            <div class="bg-white p-5 rounded-[1.5rem] flex justify-between items-center shadow-sm border border-slate-100 hover:shadow-md transition">
+                <div class="flex items-center gap-4">
+                    <div class="bg-slate-50 text-slate-600 font-black text-xs px-3 py-2 rounded-xl">SEP</div>
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">2025</p>
+                        <p class="text-[10px] text-slate-400 font-semibold uppercase">Paid via Maya</p>
+                    </div>
+                </div>
+                <span class="text-lg font-black text-slate-700">₱612.00</span>
+            </div>
+        </div>
+        <div class="water-wave z-0 opacity-40"></div>
+    </div>
+
+    <div id="view-set-limit" class="screen hide-screen bg-slate-50 p-6 pt-14">
+        <button onclick="switchView('view-dash')" class="absolute top-12 left-6 text-slate-400 font-bold text-xs flex items-center gap-1 hover:text-slate-800 transition z-20"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button>
+        <h2 class="text-[12px] font-black text-slate-800 mb-8 text-center uppercase tracking-widest mt-1">Water Target</h2>
+        
+        <div id="success-toast" class="hide-screen absolute left-6 right-6 top-24 bg-emerald-500 rounded-xl p-3 text-center shadow-lg shadow-emerald-500/30 z-50 transform transition-all duration-300">
+            <p class="text-white font-bold text-[11px] uppercase tracking-wide">Limit successfully updated!</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-indigo-500 to-blue-600 rounded-[2rem] p-7 text-white mb-6 shadow-xl shadow-blue-500/20 relative z-10 overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+            
+            <div class="flex items-center justify-between mb-8 relative z-10">
+                <div class="bg-white/20 p-3 rounded-2xl backdrop-blur-md">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] font-bold uppercase opacity-80 tracking-widest" id="current-month-display">Target Limit</p>
+                    <p class="text-[13px] font-bold mt-0.5 whitespace-nowrap">Monthly Threshold</p>
+                </div>
+            </div>
+
+            <div class="bg-white/10 rounded-3xl p-5 flex flex-col items-center justify-center backdrop-blur-md relative z-10 border border-white/20 shadow-inner w-full">
+                <p class="text-[10px] font-bold uppercase tracking-widest mb-6 opacity-80">Adjust using buttons</p>
+                
+                <div class="flex items-center justify-center gap-3 mb-4 w-full">
+                    <button onclick="adjustLimit(-0.5)" class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-3xl font-light hover:bg-white/30 active:scale-90 transition-all duration-200 shadow-sm shrink-0">-</button>
+                    
+                    <div class="flex items-end justify-center flex-1 border-b-2 border-white/30 pb-2 relative transition-all min-w-0">
+                        <span id="currency-symbol" class="hide-screen text-xl font-bold mr-1 mb-1 opacity-90 fade-transition">₱</span>
+                        <input type="number" id="limit-input" value="0.00" step="0.5" class="w-full min-w-0 p-0 m-0 bg-transparent text-3xl font-black tracking-tighter text-center outline-none" min="0" onchange="manualInputUpdate()" oninput="resizeInput()">
+                    </div>
+                    
+                    <button onclick="adjustLimit(0.5)" class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-3xl font-light hover:bg-white/30 active:scale-90 transition-all duration-200 shadow-sm shrink-0">+</button>
+                </div>
+                
+                <div onclick="toggleCurrency()" class="flex items-center gap-2 mt-2 bg-white/20 hover:bg-white/30 cursor-pointer py-2 px-4 rounded-full active:scale-95 transition-all shadow-sm">
+                    <span id="unit-label" class="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Cubic Meters (m³)</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                </div>
+                <p id="computation-disclaimer" class="hide-screen text-[8px] text-white/60 uppercase tracking-widest mt-4 text-center w-full">Estimated tiered rate only (adjustable)</p>
+            </div>
+            
+            <button onclick="setLimit()" class="w-full mt-8 bg-white text-blue-600 py-4 rounded-2xl text-[12px] tracking-[0.2em] font-black uppercase active:scale-[0.98] shadow-lg hover:bg-slate-50 transition-all">Save Target Limit</button>
+        </div>
+
+        <div class="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 z-10 relative">
+            <div class="flex items-start gap-4">
+                <div class="bg-emerald-50 w-10 h-10 rounded-full flex items-center justify-center shrink-0">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Eco Tip</p>
+                    <p class="text-[11px] font-medium text-slate-600 leading-relaxed">The average monthly water consumption for a small household is around 10 to 15 cubic meters. Set realistic goals!</p>
+                </div>
+            </div>
+        </div>
+        <div class="water-wave z-0 opacity-30"></div>
+    </div>
+
+    <!-- NOTIFICATIONS TAB (NEW) -->
+    <div id="view-notifications" class="screen hide-screen bg-slate-50 p-6 pt-14">
+        <h2 class="text-[12px] font-black text-slate-800 mb-6 text-center uppercase tracking-widest mt-1">Notifications</h2>
+
+        <div class="bg-white rounded-[2rem] p-6 mb-5 shadow-sm border border-slate-100 relative z-10 overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-blue-50 rounded-full blur-2xl opacity-70"></div>
+
+            <div class="flex items-start justify-between gap-4 relative z-10">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">This Month</p>
+                    <p class="text-lg font-black text-slate-800">
+                        <span id="notif-consumption">0.00</span>
+                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest"> / </span>
+                        <span id="notif-limit">0.00</span>
+                        <span class="text-xs font-bold text-slate-400"> m³</span>
+                    </p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Estimated Bill</p>
+                    <p class="text-2xl font-black text-blue-600">₱ <span id="notif-est-bill">0.00</span></p>
+                </div>
+
+                <div class="text-right">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Status</p>
+                    <div id="notif-status-pill" class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-100">
+                        On Track
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 relative z-10">
+                <div class="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                    <span>Progress</span>
+                    <span id="notif-percent">0%</span>
+                </div>
+                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-100">
+                    <div id="notif-progress-bar" class="h-full w-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500"></div>
+                </div>
+                <p id="notif-hint" class="text-[11px] font-medium text-slate-600 mt-3 leading-relaxed">
+                    Keep faucets off when not in use. Small habits reduce total consumption quickly.
+                </p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 mb-5 z-10 relative">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Reminder Settings</p>
+
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-700">Bill Limit Alerts</p>
+                        <p class="text-[10px] font-semibold text-slate-400">Notify at 80% and 95% usage</p>
+                    </div>
+                    <button onclick="toggleNotifSetting('hytrack_alerts_enabled')" id="alerts-toggle-btn" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white shadow-sm hover:opacity-90 active:scale-[0.98] transition">On</button>
+                </div>
+
+                <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-700">Faucet Left On Reminder</p>
+                        <p class="text-[10px] font-semibold text-slate-400">Warn after <span id="faucet-rem-min">5</span> minutes</p>
+                    </div>
+                    <button onclick="cycleFaucetReminder()" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-800 text-white shadow-sm hover:bg-slate-900 active:scale-[0.98] transition">Change</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-5 z-10 relative">
+            <button onclick="simulateUsage(0.5)" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-blue-200 transition text-left">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Simulate</p>
+                <p class="text-[12px] font-black text-slate-800 mt-1">+0.50 m³</p>
+                <p class="text-[10px] font-semibold text-slate-400 mt-1">Add consumption</p>
+            </button>
+            <button onclick="resetMonth()" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-red-200 transition text-left">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reset</p>
+                <p class="text-[12px] font-black text-slate-800 mt-1">New Month</p>
+                <p class="text-[10px] font-semibold text-slate-400 mt-1">Clear usage + alerts</p>
+            </button>
+        </div>
+
+        <div class="flex items-center justify-between mb-3">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Your Alerts</p>
+            <button onclick="markAllRead()" class="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition">Mark all read</button>
+        </div>
+
+        <div id="notif-list" class="space-y-3 relative z-10"></div>
+
+        <div class="water-wave z-0 opacity-35"></div>
+    </div>
+
+    <!-- CONTACTS TAB (NEW) -->
+    <div id="view-contacts" class="screen hide-screen bg-slate-50 p-6 pt-14">
+        <h2 class="text-[12px] font-black text-slate-800 mb-6 text-center uppercase tracking-widest mt-1">Contacts</h2>
+
+        <div class="bg-white rounded-[2rem] p-7 mb-5 shadow-sm border border-slate-100 relative z-10 overflow-hidden">
+            <div class="absolute right-0 top-0 w-28 h-28 bg-indigo-50 rounded-bl-full opacity-60"></div>
+            <div class="relative z-10">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Need help?</p>
+                <p class="text-[12px] font-medium text-slate-600 leading-relaxed">
+                    Contact the HyTrack support team for troubleshooting, billing questions, or device setup.
+                </p>
+            </div>
+        </div>
+
+        <div class="space-y-3 relative z-10">
+            <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm border border-slate-100 hover:border-blue-300 transition-colors">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-50 p-2 rounded-lg text-blue-500">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16v16H4z"/>
+                            <path d="M22 6l-10 7L2 6"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-[13px] font-bold text-slate-700">Email</p>
+                        <a href="mailto:hytrack@gmail.com" class="text-[11px] font-semibold text-slate-400 hover:text-blue-600 transition">hytrack@gmail.com</a>
+                    </div>
+                </div>
+                <button onclick="copyText('hytrack@gmail.com')" class="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition">Copy</button>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm border border-slate-100 hover:border-indigo-300 transition-colors">
+                <div class="flex items-center gap-4">
+                    <div class="bg-indigo-50 p-2 rounded-lg text-indigo-500">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.12.86.33 1.7.63 2.5a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.58-1.15a2 2 0 0 1 2.11-.45c.8.3 1.64.51 2.5.63A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-[13px] font-bold text-slate-700">Phone</p>
+                        <a href="tel:09451331634" class="text-[11px] font-semibold text-slate-400 hover:text-indigo-600 transition">0945 133 1634</a>
+                    </div>
+                </div>
+                <button onclick="copyText('0945 133 1634')" class="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition">Copy</button>
+            </div>
+
+            <div id="copy-toast" class="hide-screen bg-emerald-500 text-white rounded-xl p-3 text-center shadow-lg shadow-emerald-500/30 mt-4">
+                <p class="text-white font-bold text-[11px] uppercase tracking-wide">Copied to clipboard</p>
+            </div>
+        </div>
+
+        <div class="water-wave z-0 opacity-35"></div>
+    </div>
+
+    <div id="view-profile" class="screen hide-screen bg-slate-50 p-6 pt-14">
+        <h2 class="text-[12px] font-black text-slate-800 mb-6 text-center uppercase tracking-widest mt-1">Profile</h2>
+        
+        <div class="bg-white rounded-[2rem] p-8 mb-6 shadow-sm border border-slate-100 flex flex-col items-center text-center relative z-10">
+            <div class="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center text-blue-600 font-black text-4xl shadow-inner mb-4 border-4 border-white shadow-lg">U</div>
+            <h2 class="text-xl font-black tracking-wide text-slate-800">Arduino Dev</h2>
+            <p class="text-[10px] font-bold uppercase text-slate-400 mt-1 tracking-widest">Lipa City, Batangas</p>
+            <div class="mt-4 bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-100">Active Account</div>
+        </div>
+
+        <div class="space-y-3 relative z-10">
+            <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm border border-slate-100 cursor-pointer hover:border-blue-300 transition-colors">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-50 p-2 rounded-lg text-blue-500"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                    <span class="text-[13px] font-bold text-slate-700">Account Details</span>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            
+            <div onclick="switchView('view-about')" class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm border border-slate-100 cursor-pointer hover:border-blue-300 transition-colors">
+                <div class="flex items-center gap-4">
+                    <div class="bg-indigo-50 p-2 rounded-lg text-indigo-500"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+                    <span class="text-[13px] font-bold text-slate-700">About HyTrack</span>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            
+            <button onclick="logout()" class="w-full mt-6 bg-red-50 p-5 rounded-2xl flex items-center justify-center shadow-sm border border-red-100 active:scale-[0.98] transition-all hover:bg-red-100">
+                <span class="text-red-500 font-black text-[11px] uppercase tracking-[0.2em]">Log Out</span>
+            </button>
+        </div>
+        <div class="water-wave z-0 opacity-40"></div>
+    </div>
+
+    <div id="view-about" class="screen hide-screen bg-slate-50 p-6 pt-12">
+        <button onclick="switchView('view-profile')" class="absolute top-12 left-6 text-slate-400 font-bold text-xs flex items-center gap-1 hover:text-slate-800 transition z-20"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button>
+        
+        <div class="flex flex-col items-center h-full text-center relative z-10 pt-10">
+            <div class="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-3xl w-24 h-24 flex items-center justify-center mb-6 shadow-xl shadow-blue-500/30">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M7 12V2h12v4M21 6H12v2M12 12a5 5 0 0 0 10 0M12 16v3M8 20a1 1 0 0 1 8 0" /></svg>
+            </div>
+            
+            <h2 class="text-3xl font-black text-slate-800 mb-1">HyTrack</h2>
+            <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-6">Version 1.0 Prototype</p>
+            
+            <p class="text-[12px] font-medium text-slate-600 mb-8 leading-relaxed px-2">Smart Water Monitoring and App-Managed Waterline System for Sustainable Living.</p>
+            
+            <div class="bg-white w-full rounded-[2rem] p-7 shadow-sm border border-slate-100 mb-6 text-left relative overflow-hidden">
+                <div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full opacity-50"></div>
+                
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Presented To</p>
+                <p class="text-sm font-black text-slate-800 mb-5">TekSummit RoboQuest</p>
+
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Institution</p>
+                <p class="text-sm font-black text-slate-800 mb-5">New Era University - Lipa Branch</p>
+
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-2">Development Team</p>
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <ul class="text-[11px] font-bold text-slate-700 space-y-2">
+                        <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>Balbastro, Jann Roen E.</li>
+                        <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>Manalo, Youie Exequiel C.</li>
+                        <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>Palaganas, Bryze Hezekiah D.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="water-wave z-0 opacity-30"></div>
+    </div>
+
+    <nav id="bottom-nav" class="hide-screen absolute bottom-0 left-0 right-0 h-24 bg-white/90 backdrop-blur-md border-t border-slate-100 flex items-center justify-around px-4 z-50 rounded-b-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.03)] pb-4">
+        <button id="nav-btn-dash" onclick="switchView('view-dash')" class="p-3 text-slate-400 hover:text-blue-600 transition-colors flex flex-col items-center gap-1 relative">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span class="text-[8px] font-bold uppercase tracking-widest">Home</span>
+        </button>
+
+        <button id="nav-btn-notif" onclick="switchView('view-notifications')" class="p-3 text-slate-400 hover:text-blue-600 transition-colors flex flex-col items-center gap-1 relative">
+            <span id="notif-badge" class="notif-badge hide-badge">0</span>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 01-3.46 0"/>
+            </svg>
+            <span class="text-[8px] font-bold uppercase tracking-widest">Alerts</span>
+        </button>
+        
+        <div class="relative -mt-12">
+            <button id="nav-btn-faucet" onclick="switchView('view-faucet')" class="p-5 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-full shadow-lg shadow-blue-500/40 transition-transform hover:scale-105 active:scale-95 border-[6px] border-white">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 12V2h12v4M21 6H12v2M12 12a5 5 0 0 0 10 0M12 16v3M8 20a1 1 0 0 1 8 0" /></svg>
+            </button>
+        </div>
+
+        <button id="nav-btn-contact" onclick="switchView('view-contacts')" class="p-3 text-slate-400 hover:text-blue-600 transition-colors flex flex-col items-center gap-1 relative">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.12.86.33 1.7.63 2.5a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.58-1.15a2 2 0 0 1 2.11-.45c.8.3 1.64.51 2.5.63A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            <span class="text-[8px] font-bold uppercase tracking-widest">Contact</span>
+        </button>
+
+        <button id="nav-btn-profile" onclick="switchView('view-profile')" class="p-3 text-slate-400 hover:text-blue-600 transition-colors flex flex-col items-center gap-1 relative">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="text-[8px] font-bold uppercase tracking-widest">Profile</span>
+        </button>
+    </nav>
+
+</div>
+
+<script>
+    // State Variables
+    let currentLimitM3 = 15.00; 
+    let currentConsumptionM3 = 0.00;  // NEW: tracked consumption
+    let isPesoMode = false;
+
+    // Notifications + settings (NEW)
+    let faucetFlowInterval = null;
+    let faucetReminderTimeout = null;
+
+    const ALERT_LEVELS = [80, 95, 100]; // % of limit
+    const DEFAULT_SETTINGS = {
+        alertsEnabled: true,
+        faucetReminderMinutes: 5
+    };
+
+    // --- FIXED WATER BILL COMPUTATION ---
+    // The old version applied a fixed minimum charge (150) even for very small usage.
+    // That is why 1.16 m³ was showing 200+ pesos and why the Notifications bill appeared "not changing".
+    // This version starts from 0 and uses a simple tiered per-m³ rate so small usage scales correctly.
+    // Adjust these rates to match your local water provider if needed.
+    const WATER_TARIFF = {
+        tiers: [
+            { upTo: 10, rate: 50.00 },   // 0 - 10 m³
+            { upTo: 20, rate: 55.00 },   // 10 - 20 m³
+            { upTo: 30, rate: 60.00 },   // 20 - 30 m³
+            { upTo: Infinity, rate: 70.00 } // 30+ m³
+        ],
+        fixedFee: 0.00 // set > 0 if your provider has a true fixed monthly fee
+    };
+
+    function calculateWaterBill(m3) {
+        m3 = Math.max(0, Number(m3) || 0);
+
+        let remaining = m3;
+        let cost = WATER_TARIFF.fixedFee;
+
+        let prevCap = 0;
+        for (let i = 0; i < WATER_TARIFF.tiers.length; i++) {
+            const tier = WATER_TARIFF.tiers[i];
+            const cap = tier.upTo;
+            const tierVolume = Math.max(0, Math.min(remaining, cap - prevCap));
+
+            cost += tierVolume * tier.rate;
+
+            remaining -= tierVolume;
+            prevCap = cap;
+
+            if (remaining <= 0) break;
+        }
+
+        return cost;
+    }
+
+    function calculateM3FromBill(targetPeso) {
+        targetPeso = Math.max(0, Number(targetPeso) || 0);
+
+        // With the fixed calculation, 0 peso corresponds to 0 m³ (no forced minimum).
+        if (targetPeso <= calculateWaterBill(0)) return 0;
+
+        // Binary search for an approximate m³ value that matches the target peso
+        let low = 0, high = 500, mid = 0;
+        for (let i = 0; i < 50; i++) {
+            mid = (low + high) / 2;
+            const cost = calculateWaterBill(mid);
+            if (cost < targetPeso) low = mid;
+            else high = mid;
+        }
+        return mid;
+    }
+
+    function initApp() {
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const d = new Date();
+        document.getElementById("current-month-display").innerText = "For " + monthNames[d.getMonth()];
+
+        var savedLimit = localStorage.getItem('hytrack_water_limit');
+        if(savedLimit) {
+            currentLimitM3 = parseFloat(savedLimit);
+        } else {
+            currentLimitM3 = 15.00; 
+        }
+
+        // NEW: load consumption
+        var savedConsumption = localStorage.getItem('hytrack_consumption_m3');
+        if(savedConsumption) {
+            currentConsumptionM3 = parseFloat(savedConsumption);
+        } else {
+            currentConsumptionM3 = 0.00;
+            localStorage.setItem('hytrack_consumption_m3', currentConsumptionM3.toFixed(2));
+        }
+
+        // NEW: initialize settings
+        initSettings();
+
+        updateDisplayValue();
+        updateDashboardValues();
+        document.getElementById('faucet-limit-display').innerText = currentLimitM3.toFixed(2);
+
+        // NEW: render notifications UI state
+        ensureSeedNotifications();
+        checkThresholdsAndNotify(true);
+        renderNotifications();
+        updateNotificationBadge();
+        updateNotificationsDashboardSummary();
+
+        var savedFaucetState = localStorage.getItem('hytrack_faucet_on');
+        if(savedFaucetState === 'true') {
+            var toggle = document.getElementById('faucet-toggle');
+            toggle.checked = true;
+            toggleFaucet(toggle);
+        }
+    }
+
+    // --- Function to sync Dashboard automatically ---
+    function updateDashboardValues() {
+        var dashBill = document.getElementById('dash-bill-display');
+        var dashConsumption = document.getElementById('dash-consumption-display');
+        
+        if (dashBill && dashConsumption) {
+            // Bill limit = estimated cost at target limit
+            dashBill.innerText = "₱ " + calculateWaterBill(currentLimitM3).toFixed(2);
+            // Consumption = tracked usage
+            dashConsumption.innerText = currentConsumptionM3.toFixed(2);
+        }
+
+        // Update Notifications header metrics if present
+        updateNotificationsHeader();
+        updateNotificationsDashboardSummary();
+    }
+
+    // --- Function to auto-resize text so no scrolling happens ---
+    function resizeInput() {
+        var input = document.getElementById('limit-input');
+        if (!input) return;
+        if (input.value.length > 5) {
+            input.classList.remove('text-3xl');
+            input.classList.add('text-2xl');
+        } else {
+            input.classList.remove('text-2xl');
+            input.classList.add('text-3xl');
+        }
+    }
+
+    function updateDisplayValue() {
+        var input = document.getElementById('limit-input');
+        var unitLabel = document.getElementById('unit-label');
+        var currencySymbol = document.getElementById('currency-symbol');
+        var disclaimer = document.getElementById('computation-disclaimer');
+        if (!input) return;
+        
+        if (isPesoMode) {
+            input.value = calculateWaterBill(currentLimitM3).toFixed(2);
+            unitLabel.innerText = "Estimated Cost (₱)";
+            currencySymbol.classList.remove('hide-screen');
+            disclaimer.classList.remove('hide-screen');
+        } else {
+            input.value = currentLimitM3.toFixed(2);
+            unitLabel.innerText = "Cubic Meters (m³)";
+            currencySymbol.classList.add('hide-screen');
+            disclaimer.classList.add('hide-screen');
+        }
+        resizeInput();
+    }
+
+    function toggleCurrency() {
+        manualInputUpdate(); 
+        isPesoMode = !isPesoMode;
+        updateDisplayValue();
+    }
+
+    function manualInputUpdate() {
+        var input = document.getElementById('limit-input');
+        if (!input) return;
+        var val = parseFloat(input.value) || 0;
+        
+        if (isPesoMode) {
+            currentLimitM3 = calculateM3FromBill(val);
+        } else {
+            currentLimitM3 = val;
+        }
+        
+        if (currentLimitM3 < 0) currentLimitM3 = 0;
+        resizeInput();
+    }
+
+    function adjustLimit(amount) {
+        currentLimitM3 += amount;
+        if (currentLimitM3 < 0) currentLimitM3 = 0; 
+        updateDisplayValue();
+    }
+
+    function setLimit() {
+        var limitValue = currentLimitM3.toFixed(2);
+        localStorage.setItem('hytrack_water_limit', limitValue);
+        
+        document.getElementById('faucet-limit-display').innerText = limitValue;
+        
+        updateDashboardValues();
+
+        // NEW: thresholds might change when limit changes
+        resetThresholdFlags();
+        checkThresholdsAndNotify(true);
+        renderNotifications();
+        updateNotificationBadge();
+        
+        var toast = document.getElementById('success-toast');
+        toast.classList.remove('hide-screen');
+        
+        setTimeout(function() {
+            toast.classList.add('hide-screen');
+        }, 3000);
+    }
+
+    function switchView(targetId) {
+        var allScreens = document.querySelectorAll('.screen');
+        for (var i = 0; i < allScreens.length; i++) {
+            allScreens[i].classList.add('hide-screen');
+        }
+        document.getElementById(targetId).classList.remove('hide-screen');
+        
+        var nav = document.getElementById('bottom-nav');
+        if(targetId === 'view-login' || targetId === 'view-create') {
+            nav.classList.add('hide-screen'); 
+        } else {
+            nav.classList.remove('hide-screen'); 
+            updateNavState(targetId); 
+        }
+
+        // NEW: keep Notifications screen fresh
+        if (targetId === 'view-notifications') {
+            checkThresholdsAndNotify(true);
+            renderNotifications();
+            updateNotificationBadge();
+            updateNotificationsHeader();
+        }
+    }
+
+    function updateNavState(targetId) {
+        // reset
+        safeNavReset('nav-btn-dash');
+        safeNavReset('nav-btn-notif');
+        safeNavReset('nav-btn-contact');
+        safeNavReset('nav-btn-profile');
+        
+        var faucetBtn = document.getElementById('nav-btn-faucet');
+        faucetBtn.className = "p-5 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-full shadow-lg shadow-blue-500/40 transition-transform hover:scale-105 active:scale-95 border-[6px] border-white";
+
+        if(targetId === 'view-dash' || targetId === 'view-billing' || targetId === 'view-set-limit') {
+            safeNavActivate('nav-btn-dash');
+        } else if(targetId === 'view-notifications') {
+            safeNavActivate('nav-btn-notif');
+        } else if(targetId === 'view-contacts') {
+            safeNavActivate('nav-btn-contact');
+        } else if(targetId === 'view-profile' || targetId === 'view-about') {
+            safeNavActivate('nav-btn-profile');
+        } else if (targetId === 'view-faucet') {
+            faucetBtn.classList.replace('from-blue-500', 'from-indigo-600');
+            faucetBtn.classList.replace('to-blue-700', 'to-indigo-800');
+            faucetBtn.classList.replace('shadow-blue-500/40', 'shadow-indigo-500/40');
+        }
+    }
+
+    function safeNavReset(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove('text-blue-600');
+        el.classList.add('text-slate-400');
+    }
+    function safeNavActivate(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove('text-slate-400');
+        el.classList.add('text-blue-600');
+    }
+
+    function attemptLogin() {
+        var pass = document.getElementById('pass-input').value;
+        if(pass === "admin123" || pass === "") { 
+            switchView('view-dash');
+            hideError();
+            document.getElementById('pass-input').value = ""; 
+        } else {
+            document.getElementById('error-toast').classList.remove('hide-screen');
+        }
+    }
+
+    function hideError() {
+        document.getElementById('error-toast').classList.add('hide-screen');
+    }
+    
+    function logout() {
+        // stop any simulation timers
+        stopFaucetSimulation();
+        switchView('view-login');
+    }
+
+    function toggleFaucet(checkbox) {
+        var statusLabel = document.getElementById('faucet-status-text');
+        var onOffText = document.getElementById('on-off-label');
+        var faucetCircle = document.getElementById('faucet-circle');
+        var faucetIcon = document.getElementById('faucet-icon');
+        var faucetWave = document.getElementById('faucet-wave');
+        
+        if(checkbox.checked) {
+            statusLabel.innerText = "SYSTEM: ACTIVE";
+            statusLabel.className = "text-[11px] font-black text-blue-500 uppercase mb-5 tracking-[0.3em] z-10 transition-colors duration-300";
+            
+            onOffText.innerText = "FLOWING";
+            onOffText.className = "mt-10 text-3xl font-black text-blue-600 uppercase z-10 text-glow transition-all duration-300 tracking-tight";
+            
+            faucetCircle.classList.add('faucet-on-anim');
+            faucetCircle.classList.replace('border-slate-50', 'border-blue-100');
+            faucetIcon.setAttribute('stroke', '#2563eb');
+            
+            faucetWave.classList.remove('grayscale', 'opacity-20');
+            faucetWave.classList.add('opacity-80');
+
+            localStorage.setItem('hytrack_faucet_on', 'true');
+
+            // NEW: faucet reminders and usage simulation
+            startFaucetSimulation();
+
+            // NEW: immediate advisory notification
+            addNotificationOncePerSession(
+                'faucet-on',
+                'Faucet is On',
+                'Water is currently flowing. Turn off the faucet when not in use to avoid accidental over-consumption.',
+                'info'
+            );
+
+        } else {
+            statusLabel.innerText = "SYSTEM: OFF";
+            statusLabel.className = "text-[11px] font-black text-slate-400 uppercase mb-5 tracking-[0.3em] z-10 transition-colors duration-300";
+            
+            onOffText.innerText = "OFF";
+            onOffText.className = "mt-10 text-3xl font-black text-slate-800 uppercase z-10 transition-all duration-300 tracking-tight";
+            
+            faucetCircle.classList.remove('faucet-on-anim');
+            faucetCircle.classList.replace('border-blue-100', 'border-slate-50');
+            faucetIcon.setAttribute('stroke', '#94a3b8');
+
+            faucetWave.classList.add('grayscale', 'opacity-20');
+            faucetWave.classList.remove('opacity-80');
+
+            localStorage.setItem('hytrack_faucet_on', 'false');
+
+            // NEW
+            stopFaucetSimulation();
+        }
+
+        updateNotificationBadge();
+        updateNotificationsDashboardSummary();
+    }
+
+    // -----------------------------
+    // NOTIFICATIONS SYSTEM (NEW)
+    // -----------------------------
+    function initSettings() {
+        // alerts enabled
+        var a = localStorage.getItem('hytrack_alerts_enabled');
+        if (a === null) localStorage.setItem('hytrack_alerts_enabled', DEFAULT_SETTINGS.alertsEnabled ? 'true' : 'false');
+
+        // faucet reminder minutes
+        var m = localStorage.getItem('hytrack_faucet_reminder_min');
+        if (m === null) localStorage.setItem('hytrack_faucet_reminder_min', String(DEFAULT_SETTINGS.faucetReminderMinutes));
+
+        refreshSettingsUI();
+    }
+
+    function refreshSettingsUI() {
+        var enabled = localStorage.getItem('hytrack_alerts_enabled') === 'true';
+        var btn = document.getElementById('alerts-toggle-btn');
+        if (btn) {
+            btn.innerText = enabled ? 'On' : 'Off';
+            btn.className = enabled
+                ? "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white shadow-sm hover:opacity-90 active:scale-[0.98] transition"
+                : "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-200 text-slate-600 shadow-sm hover:bg-slate-300 active:scale-[0.98] transition";
+        }
+
+        var min = parseInt(localStorage.getItem('hytrack_faucet_reminder_min') || '5', 10);
+        var label = document.getElementById('faucet-rem-min');
+        if (label) label.innerText = String(min);
+    }
+
+    function toggleNotifSetting(key) {
+        var current = localStorage.getItem(key) === 'true';
+        localStorage.setItem(key, (!current).toString());
+        refreshSettingsUI();
+
+        addNotification(
+            'settings',
+            'Notification Settings Updated',
+            (localStorage.getItem('hytrack_alerts_enabled') === 'true')
+                ? 'Bill limit alerts are enabled. You will be notified as you approach your set threshold.'
+                : 'Bill limit alerts are disabled. You can re-enable them anytime in Notifications.',
+            'info'
+        );
+        renderNotifications();
+        updateNotificationBadge();
+        updateNotificationsDashboardSummary();
+    }
+
+    function cycleFaucetReminder() {
+        var current = parseInt(localStorage.getItem('hytrack_faucet_reminder_min') || '5', 10);
+        var options = [3, 5, 10, 15];
+        var idx = options.indexOf(current);
+        var next = options[(idx + 1) % options.length];
+        localStorage.setItem('hytrack_faucet_reminder_min', String(next));
+        refreshSettingsUI();
+
+        addNotification(
+            'settings',
+            'Faucet Reminder Updated',
+            'Faucet left-on reminders will trigger after ' + next + ' minutes of continuous flow.',
+            'info'
+        );
+        renderNotifications();
+        updateNotificationBadge();
+    }
+
+    function loadNotifications() {
+        try {
+            var raw = localStorage.getItem('hytrack_notifications');
+            if (!raw) return [];
+            var list = JSON.parse(raw);
+            return Array.isArray(list) ? list : [];
+        } catch(e) {
+            return [];
+        }
+    }
+
+    function saveNotifications(list) {
+        localStorage.setItem('hytrack_notifications', JSON.stringify(list));
+    }
+
+    function addNotification(type, title, message, priority) {
+        var list = loadNotifications();
+        var item = {
+            id: String(Date.now()) + "_" + Math.floor(Math.random() * 100000),
+            ts: Date.now(),
+            type: type || 'general',
+            title: title || 'Notification',
+            message: message || '',
+            priority: priority || 'info',
+            read: false
+        };
+        list.unshift(item);
+        saveNotifications(list);
+        updateNotificationBadge();
+        updateNotificationsDashboardSummary();
+    }
+
+    // one-time per session helper (prevents spam when toggling faucet quickly)
+    function addNotificationOncePerSession(key, title, message, priority) {
+        var sessionKey = 'hytrack_session_once_' + key;
+        if (sessionStorage.getItem(sessionKey) === 'true') return;
+        sessionStorage.setItem(sessionKey, 'true');
+        addNotification(key, title, message, priority || 'info');
+    }
+
+    function ensureSeedNotifications() {
+        var list = loadNotifications();
+        if (list.length > 0) return;
+
+        addNotification(
+            'welcome',
+            'HyTrack Alerts Ready',
+            'Set a monthly target, monitor usage, and receive reminders before your bill reaches the limit.',
+            'info'
+        );
+        addNotification(
+            'tip',
+            'Water Saving Tip',
+            'Turn off the faucet while brushing your teeth. This simple habit can reduce unnecessary consumption.',
+            'info'
+        );
+    }
+
+    function formatTime(ts) {
+        var d = new Date(ts);
+        var h = d.getHours();
+        var m = d.getMinutes();
+        var ap = h >= 12 ? 'PM' : 'AM';
+        h = h % 12; if (h === 0) h = 12;
+        var mm = (m < 10) ? ('0' + m) : m;
+        return d.toLocaleDateString() + " - " + h + ":" + mm + " " + ap;
+    }
+
+    function renderNotifications() {
+        var list = loadNotifications();
+        var container = document.getElementById('notif-list');
+        if (!container) return;
+
+        if (list.length === 0) {
+            container.innerHTML = '<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 text-center text-slate-500 text-[12px] font-semibold">No notifications yet.</div>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < list.length; i++) {
+            var n = list[i];
+
+            var color = 'border-slate-100';
+            var dot = 'bg-slate-300';
+            if (n.priority === 'warning') { color = 'border-amber-200'; dot = 'bg-amber-500'; }
+            if (n.priority === 'danger') { color = 'border-red-200'; dot = 'bg-red-500'; }
+
+            var unreadRing = n.read ? '' : 'ring-2 ring-blue-100';
+            var opacity = n.read ? 'opacity-70' : 'opacity-100';
+
+            html += ''
+                + '<div class="bg-white p-5 rounded-2xl shadow-sm border ' + color + ' ' + unreadRing + ' ' + opacity + '">'
+                + '  <div class="flex items-start justify-between gap-3">'
+                + '    <div class="flex items-start gap-3">'
+                + '      <div class="w-2.5 h-2.5 rounded-full mt-1.5 ' + dot + '"></div>'
+                + '      <div>'
+                + '        <p class="text-[12px] font-black text-slate-800">' + escapeHtml(n.title) + '</p>'
+                + '        <p class="text-[11px] font-medium text-slate-600 leading-relaxed mt-1">' + escapeHtml(n.message) + '</p>'
+                + '        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-3">' + formatTime(n.ts) + '</p>'
+                + '      </div>'
+                + '    </div>'
+                + '    <button onclick="toggleRead(\'' + n.id + '\')" class="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition">'
+                + (n.read ? 'Unread' : 'Read')
+                + '    </button>'
+                + '  </div>'
+                + '</div>';
+        }
+
+        container.innerHTML = html;
+        updateNotificationsHeader();
+        refreshSettingsUI();
+    }
+
+    function toggleRead(id) {
+        var list = loadNotifications();
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) {
+                list[i].read = !list[i].read;
+                break;
+            }
+        }
+        saveNotifications(list);
+        renderNotifications();
+        updateNotificationBadge();
+        updateNotificationsDashboardSummary();
+    }
+
+    function markAllRead() {
+        var list = loadNotifications();
+        for (var i = 0; i < list.length; i++) list[i].read = true;
+        saveNotifications(list);
+        renderNotifications();
+        updateNotificationBadge();
+        updateNotificationsDashboardSummary();
+    }
+
+    function unreadCount() {
+        var list = loadNotifications();
+        var c = 0;
+        for (var i = 0; i < list.length; i++) if (!list[i].read) c++;
+        return c;
+    }
+
+    function updateNotificationBadge() {
+        var badge = document.getElementById('notif-badge');
+        if (!badge) return;
+
+        var c = unreadCount();
+        badge.innerText = String(c > 99 ? '99+' : c);
+        if (c <= 0) badge.classList.add('hide-badge');
+        else badge.classList.remove('hide-badge');
+    }
+
+    function updateNotificationsDashboardSummary() {
+        var el = document.getElementById('dash-notif-summary');
+        if (!el) return;
+
+        var list = loadNotifications();
+        var unread = unreadCount();
+
+        if (unread === 0) {
+            el.innerText = 'No unread alerts. You are up to date.';
+            return;
+        }
+
+        // show most recent unread
+        for (var i = 0; i < list.length; i++) {
+            if (!list[i].read) {
+                el.innerText = unread + ' unread alert(s). Latest: ' + list[i].title + '.';
+                return;
+            }
+        }
+    }
+
+    function updateNotificationsHeader() {
+        var cons = document.getElementById('notif-consumption');
+        var lim = document.getElementById('notif-limit');
+        var bill = document.getElementById('notif-est-bill');
+        var pct = document.getElementById('notif-percent');
+        var bar = document.getElementById('notif-progress-bar');
+        var status = document.getElementById('notif-status-pill');
+        var hint = document.getElementById('notif-hint');
+
+        if (!cons || !lim || !bill || !pct || !bar || !status || !hint) return;
+
+        cons.innerText = currentConsumptionM3.toFixed(2);
+        lim.innerText = currentLimitM3.toFixed(2);
+
+        // FIX: now changes smoothly with small consumption values
+        bill.innerText = calculateWaterBill(currentConsumptionM3).toFixed(2);
+
+        var percent = (currentLimitM3 <= 0) ? 0 : Math.min(999, (currentConsumptionM3 / currentLimitM3) * 100);
+        var percentText = Math.round(percent) + '%';
+        pct.innerText = percentText;
+
+        var width = Math.max(0, Math.min(100, percent));
+        bar.style.width = width + '%';
+
+        // Status logic
+        if (percent >= 100) {
+            status.className = "inline-flex items-center gap-2 bg-red-50 text-red-600 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-red-100";
+            status.innerText = "Limit Reached";
+            hint.innerText = "You have reached your set limit. Turning off unused faucets and reducing run-time helps prevent further cost spikes.";
+        } else if (percent >= 95) {
+            status.className = "inline-flex items-center gap-2 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-amber-100";
+            status.innerText = "Very Close";
+            hint.innerText = "Usage is very close to your limit. Reduce faucet run-time and check for leaks to stay within your target.";
+        } else if (percent >= 80) {
+            status.className = "inline-flex items-center gap-2 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-amber-100";
+            status.innerText = "Approaching";
+            hint.innerText = "You are approaching your limit. Shorten showers and avoid leaving faucets running between tasks.";
+        } else {
+            status.className = "inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-100";
+            status.innerText = "On Track";
+            hint.innerText = "Keep faucets off when not in use. Small habits reduce total consumption quickly.";
+        }
+
+        refreshSettingsUI();
+    }
+
+    function checkThresholdsAndNotify(silentIfAlready) {
+        var alertsEnabled = localStorage.getItem('hytrack_alerts_enabled') === 'true';
+        if (!alertsEnabled) return;
+
+        if (currentLimitM3 <= 0) return;
+
+        var percent = (currentConsumptionM3 / currentLimitM3) * 100;
+        for (var i = 0; i < ALERT_LEVELS.length; i++) {
+            var level = ALERT_LEVELS[i];
+            if (percent >= level) {
+                var flagKey = 'hytrack_threshold_' + level;
+                var already = localStorage.getItem(flagKey) === 'true';
+                if (!already) {
+                    localStorage.setItem(flagKey, 'true');
+
+                    if (level === 80) {
+                        addNotification('limit', 'Approaching Bill Limit', 'You are at ' + Math.round(percent) + '% of your monthly target. Turn off faucets when not in use and watch for unnecessary flow.', 'warning');
+                    } else if (level === 95) {
+                        addNotification('limit', 'Bill Limit Nearly Reached', 'You are at ' + Math.round(percent) + '% of your monthly target. Reduce usage now to avoid exceeding your set limit.', 'danger');
+                    } else if (level === 100) {
+                        addNotification('limit', 'Monthly Limit Reached', 'You have reached 100% of your monthly target. Consider pausing non-essential water usage and checking for leaks.', 'danger');
+                    }
+                } else {
+                    if (!silentIfAlready) {
+                        // already notified
+                    }
+                }
+            }
+        }
+    }
+
+    function resetThresholdFlags() {
+        for (var i = 0; i < ALERT_LEVELS.length; i++) {
+            localStorage.removeItem('hytrack_threshold_' + ALERT_LEVELS[i]);
+        }
+    }
+
+    function setConsumption(newVal) {
+        currentConsumptionM3 = Math.max(0, newVal);
+        localStorage.setItem('hytrack_consumption_m3', currentConsumptionM3.toFixed(2));
+        updateDashboardValues();
+        checkThresholdsAndNotify(true);
+        updateNotificationBadge();
+    }
+
+    function simulateUsage(delta) {
+        setConsumption(currentConsumptionM3 + (delta || 0));
+        addNotification('usage', 'Consumption Updated', 'Consumption increased by ' + (delta || 0).toFixed(2) + ' m³. Monitor faucet usage to stay within your target.', 'info');
+        renderNotifications();
+        updateNotificationBadge();
+    }
+
+    function resetMonth() {
+        setConsumption(0.00);
+        resetThresholdFlags();
+
+        // Clear notifications but keep a fresh seed
+        localStorage.removeItem('hytrack_notifications');
+        ensureSeedNotifications();
+
+        addNotification('reset', 'New Month Started', 'Consumption has been reset to 0.00 m³. Your alerts are ready for the new billing cycle.', 'info');
+
+        renderNotifications();
+        updateNotificationBadge();
+        updateNotificationsDashboardSummary();
+    }
+
+    function startFaucetSimulation() {
+        stopFaucetSimulation();
+
+        // Simulate consumption increase while faucet is on (prototype)
+        // Adds 0.02 m³ every 5 seconds (adjust if needed)
+        faucetFlowInterval = setInterval(function() {
+            setConsumption(currentConsumptionM3 + 0.02);
+        }, 5000);
+
+        // Reminder if faucet stays on
+        var minutes = parseInt(localStorage.getItem('hytrack_faucet_reminder_min') || '5', 10);
+        faucetReminderTimeout = setTimeout(function() {
+            addNotification('faucet', 'Turn Off the Faucet', 'The faucet has been left on for ' + minutes + ' minutes. Turn it off to prevent waste and avoid hitting your bill limit.', 'warning');
+            renderNotifications();
+            updateNotificationBadge();
+        }, minutes * 60 * 1000);
+    }
+
+    function stopFaucetSimulation() {
+        if (faucetFlowInterval) {
+            clearInterval(faucetFlowInterval);
+            faucetFlowInterval = null;
+        }
+        if (faucetReminderTimeout) {
+            clearTimeout(faucetReminderTimeout);
+            faucetReminderTimeout = null;
+        }
+    }
+
+    // -----------------------------
+    // CONTACTS UTILITIES (NEW)
+    // -----------------------------
+    function copyText(text) {
+        try {
+            navigator.clipboard.writeText(text);
+        } catch(e) {
+            // fallback
+            var input = document.createElement('input');
+            input.value = text;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+        }
+
+        var toast = document.getElementById('copy-toast');
+        if (toast) {
+            toast.classList.remove('hide-screen');
+            setTimeout(function() {
+                toast.classList.add('hide-screen');
+            }, 1800);
+        }
+    }
+
+    // -----------------------------
+    // HELPERS
+    // -----------------------------
+    function escapeHtml(str) {
+        if (str === undefined || str === null) return '';
+        return String(str)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+</script>
+
+</body>
+</html>
